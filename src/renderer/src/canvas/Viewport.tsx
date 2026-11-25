@@ -31,10 +31,12 @@ export function Viewport({ children, onBackgroundClick }: Props): React.JSX.Elem
   const rootRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{ x: number; y: number } | undefined>(undefined)
   const spaceRef = useRef(false)
-  const movedRef = useRef(false)
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent): void => {
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return
+      const target = e.target
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, button, select'))) return
       if (e.code === 'Space' && !e.repeat) {
         spaceRef.current = true
         document.body.style.cursor = 'grab'
@@ -65,15 +67,17 @@ export function Viewport({ children, onBackgroundClick }: Props): React.JSX.Elem
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      const isPan = e.button === 1 || e.shiftKey || spaceRef.current || panMode
-      if (!isPan) return
+      const isPan = e.button === 1 || (e.button === 0 && (e.shiftKey || spaceRef.current || panMode))
+      if (!isPan) {
+        if (e.button === 0) onBackgroundClick?.()
+        return
+      }
       e.preventDefault()
       dragRef.current = { x: e.clientX, y: e.clientY }
-      movedRef.current = false
       e.currentTarget.setPointerCapture(e.pointerId)
       document.body.style.cursor = 'grabbing'
     },
-    [panMode],
+    [onBackgroundClick, panMode],
   )
 
   const onPointerMove = useCallback(
@@ -82,7 +86,6 @@ export function Viewport({ children, onBackgroundClick }: Props): React.JSX.Elem
       if (!drag) return
       const dx = e.clientX - drag.x
       const dy = e.clientY - drag.y
-      if (dx !== 0 || dy !== 0) movedRef.current = true
       dragRef.current = { x: e.clientX, y: e.clientY }
       panBy(dx, dy)
     },
@@ -96,11 +99,11 @@ export function Viewport({ children, onBackgroundClick }: Props): React.JSX.Elem
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId)
     }
-    if (!movedRef.current) onBackgroundClick?.()
-  }, [onBackgroundClick])
+  }, [])
 
   const onWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
+      if (e.deltaY === 0) return
       const rect = rootRef.current?.getBoundingClientRect()
       if (!rect) return
       // Ctrl+roda = zoom; roda pura tambem, porque no canvas nao ha scroll vertical.

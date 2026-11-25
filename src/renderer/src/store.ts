@@ -129,12 +129,10 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   clearSelection: () => set({ selectedIds: new Set() }),
 
   panBy: (dx, dy) =>
-    set((state) => ({
-      viewport: {
-        ...state.viewport,
-        origin: { x: state.viewport.origin.x + dx, y: state.viewport.origin.y + dy },
-      },
-    })),
+    set((state) => {
+      const { origin, zoom } = state.viewport
+      return { viewport: { zoom, origin: { x: origin.x - dx / zoom, y: origin.y - dy / zoom } } }
+    }),
 
   /**
    * Zoom ancorado num ponto da tela: o conteudo sob o cursor nao se move.
