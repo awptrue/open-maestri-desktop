@@ -1,0 +1,23 @@
+node_modules/
+out/
+dist/
+coverage/
+.vite/
+*.log
+.env
+.env.local
+/AGENTS.md
+
+# Repositorios de referencia (nao versionados)
+_ref/
+
+# Artefatos temporarios
+.tmp/
+*.tsbuildinfo
+
+# Diretorio de dados de teste local (dev, smoke, temporarios)
+.tmpdata/
+.tmpdata-*/
+
+# Lixo de execucao local
+.tmpdata-*.txt
