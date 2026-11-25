@@ -1,0 +1,507 @@
+:root {
+  --bg: #111113;
+  --bg-elevated: #17171a;
+  --bg-node: #1d1d21;
+  --border: #2a2a30;
+  --text: #e8e8ea;
+  --text-muted: #8b8b93;
+  --accent: #3f8cff;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.app-root {
+  display: grid;
+  grid-template-rows: 40px 1fr 26px;
+  height: 100%;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-title {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.app-subtitle,
+.app-muted,
+.app-zoom {
+  color: var(--text-muted);
+}
+
+.app-spacer {
+  flex: 1;
+}
+
+.toolbar-button {
+  min-width: 26px;
+  height: 24px;
+  padding: 0 8px;
+  background: #24242a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.toolbar-button:hover {
+  background: #2e2e36;
+}
+
+.app-canvas {
+  position: relative;
+  overflow: hidden;
+}
+
+.app-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 12px;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* --- Canvas --------------------------------------------------------------- */
+
+.canvas-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background-image: radial-gradient(circle, #2a2a32 1px, transparent 1px);
+  background-size: 16px 16px;
+  cursor: default;
+}
+
+.canvas-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  will-change: transform;
+}
+
+.connection-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.connection-draft {
+  z-index: 2147483647;
+  color: #a3b9d8;
+}
+
+.connection-draft.is-valid { color: #66dec1; }
+.connection-draft path { fill: none; stroke: currentColor; stroke-linecap: round; }
+.connection-draft circle { fill: currentColor; }
+
+/* --- Nos ------------------------------------------------------------------ */
+
+.node-shell {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-node);
+  border: 1px solid #393943;
+  border-radius: 9px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.node-shell.is-selected {
+  border-color: var(--node-accent);
+  box-shadow: 0 0 0 1px var(--node-accent), 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.node-shell.is-connect-source,
+.node-shell.is-connect-target {
+  border-color: #66dec1;
+  outline: 2px solid #66dec1;
+  outline-offset: 3px;
+  opacity: 1;
+}
+
+.node-shell.is-connect-target .node-header {
+  background: #213b36;
+}
+
+.node-shell.is-locked {
+  opacity: 0.85;
+}
+
+.node-header {
+  display: flex;
+  align-items: center;
+  flex: 0 0 34px;
+  gap: 5px;
+  padding: 0 7px;
+  background: #242731;
+  border-bottom: 1px solid #3a3c46;
+  color: #e9eaf0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.node-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.node-glyph {
+  display: inline-flex;
+  flex: none;
+  color: color-mix(in srgb, var(--node-accent) 65%, #e0e5f4);
+}
+
+.node-status {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 5px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: #343842;
+  color: #c4cada;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.node-status--running { color: #83efcb; background: #1d453b; }
+
+.node-status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.node-status--running .node-status-dot { box-shadow: 0 0 6px currentColor; }
+
+.node-chrome-button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: #bec7d9;
+  cursor: pointer;
+}
+
+.node-chrome-button:hover,
+.node-chrome-button[aria-pressed='true'],
+.node-connect-handle:focus-visible {
+  background: #384353;
+  color: #fff;
+}
+
+.node-chrome-button:focus-visible { outline: 1px solid #9cbffd; outline-offset: -2px; }
+.node-connect-handle { cursor: grab; touch-action: none; }
+.is-connect-source .node-connect-handle { color: #83efcb; cursor: grabbing; }
+
+.node-body {
+  flex: 1;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--text);
+  min-height: 0;
+}
+
+.node-muted {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.node-terminal-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.node-note-placeholder,
+.node-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.node-shell--text {
+  background: #212530;
+}
+
+.node-shell--text .node-body { cursor: grab; }
+.node-shell--text.is-locked .node-body { cursor: default; }
+
+.node-text {
+  padding: 8px 10px;
+  color: #eef0f7;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.node-terminal,
+.node-filetree {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.node-terminal-host {
+  flex: 1;
+  min-height: 0;
+  padding: 4px 0 0 6px;
+  overflow: hidden;
+}
+
+/* O xterm mede o container; sem altura explicita ele nasce com 0 linhas. */
+.node-terminal-host .xterm {
+  height: 100%;
+}
+
+.node-terminal-host .xterm-viewport {
+  scrollbar-width: thin;
+}
+
+.node-terminal-error,
+.node-filetree-error,
+.node-note-error {
+  padding: 6px 8px;
+  color: #ff8787;
+  font-size: 11px;
+}
+
+/* --- Nota ----------------------------------------------------------------- */
+
+.node-shell--stickyNote .node-header {
+  background: #36312a;
+  border-bottom-color: #514739;
+}
+
+.node-shell--stickyNote.is-connect-target .node-header { background: #213b36; }
+.node-shell--stickyNote .node-body { background: #28251f; }
+
+.node-note-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.node-note-editor,
+.node-note-preview {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 9px 10px;
+  background: transparent;
+  color: #eee5ce;
+  line-height: 1.5;
+  user-select: text;
+}
+
+.node-note-editor {
+  border: 0;
+  outline: none;
+  resize: none;
+  font-family: 'Cascadia Mono', Consolas, monospace;
+}
+
+.node-note-editor:focus-visible { box-shadow: inset 0 0 0 1px #aa9364; }
+.node-note-editor::placeholder { color: #aaa18f; }
+.node-note-preview { overflow-wrap: anywhere; }
+.node-note-preview > :first-child { margin-top: 0; }
+.node-note-preview > :last-child { margin-bottom: 0; }
+.node-note-preview :is(h1, h2, h3) { line-height: 1.25; color: #fff3d8; }
+.node-note-preview h1 { font-size: 1.4em; }
+.node-note-preview h2 { font-size: 1.2em; }
+.node-note-preview h3 { font-size: 1.08em; }
+.node-note-preview pre { overflow: auto; background: #1c1b19; padding: 6px 8px; border-radius: 4px; }
+.node-note-preview blockquote { margin-inline: 0; padding-inline-start: 8px; border-inline-start: 2px solid #a89163; }
+.node-note-preview :is(th, td) { padding: 3px 5px; border: 1px solid #625440; }
+.node-note-preview table { border-collapse: collapse; }
+.note-markdown-link { color: #ebca86; text-decoration: underline; }
+
+.node-shell--stickyNote .node-note-placeholder {
+  padding: 9px 10px;
+  color: #aaa18f;
+}
+
+/* --- File tree ------------------------------------------------------------ */
+
+.node-filetree-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+  background: #191920;
+}
+
+.node-filetree-up {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: #24242a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.node-filetree-up:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.node-filetree-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 11px;
+  direction: rtl;
+  text-align: left;
+}
+
+.node-filetree-list {
+  flex: 1;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.node-filetree-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 3px 8px;
+  background: none;
+  border: 0;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.node-filetree-item:hover {
+  background: #24242a;
+}
+
+.node-filetree-item.is-dir {
+  color: #ffb861;
+}
+
+.node-filetree-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-filetree-list .node-muted {
+  padding: 4px 8px;
+}
+
+/* --- Erro de boot --------------------------------------------------------- */
+
+.app-boot-error {
+  position: absolute;
+  z-index: 10;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  background: #40202a;
+  color: #ff8787;
+  border: 1px solid #66303c;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* --- Cabecalho arrastavel ------------------------------------------------- */
+
+/* So o cabecalho move o no: o corpo precisa receber clique e selecao. */
+.node-header {
+  cursor: grab;
+}
+
+.node-shell.is-locked .node-header {
+  cursor: not-allowed;
+}
+
+/* --- Alca de redimensionar ------------------------------------------------ */
+
+.node-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  /* Area de clique maior que o desenho: 6px era dificil de acertar. */
+  background: linear-gradient(
+    135deg,
+    transparent 0 55%,
+    rgba(255, 255, 255, 0.28) 55% 62%,
+    transparent 62% 72%,
+    rgba(255, 255, 255, 0.18) 72% 79%,
+    transparent 79%
+  );
+  z-index: 2;
+}
+
+.node-shell.is-selected .node-resize-handle {
+  background: linear-gradient(
+    135deg,
+    transparent 0 55%,
+    rgba(63, 140, 255, 0.9) 55% 62%,
+    transparent 62% 72%,
+    rgba(63, 140, 255, 0.6) 72% 79%,
+    transparent 79%
+  );
+}

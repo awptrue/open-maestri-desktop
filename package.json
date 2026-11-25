@@ -1,0 +1,102 @@
+{
+  "name": "open-maestri-desktop",
+  "version": "0.1.0",
+  "description": "Canvas espacial de orquestracao de agentes de IA para Windows (Electron + TypeScript)",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "license": "GPL-3.0-or-later",
+  "private": true,
+  "author": "open-maestri contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/awptrue/open-maestri-desktop"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "npm run typecheck && electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "rebuild": "electron-builder install-app-deps",
+    "package": "npm run build && electron-builder --win",
+    "package:portable": "npm run build && electron-builder --win portable"
+  },
+  "dependencies": {
+    "@lydell/node-pty": "1.2.0-beta.18"
+  },
+  "devDependencies": {
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.4",
+    "@types/node": "22.19.4",
+    "@types/react": "19.3.1",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/addon-serialize": "0.14.0",
+    "@xterm/addon-webgl": "0.19.0",
+    "@xterm/headless": "6.0.0",
+    "@xterm/xterm": "6.0.0",
+    "chokidar": "6.0.0",
+    "electron": "45.5.0",
+    "electron-builder": "26.18.0",
+    "electron-vite": "6.0.0",
+    "jsdom": "31.0.1",
+    "marked": "18.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "5.9.3",
+    "vite": "8.3.8",
+    "vitest": "5.1.2",
+    "zod": "4.6.7",
+    "zustand": "5.1.0"
+  },
+  "build": {
+    "appId": "dev.openmaestri.desktop",
+    "productName": "open-maestri",
+    "directories": {
+      "output": "dist",
+      "buildResources": "resources"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "cli",
+        "to": "cli"
+      }
+    ],
+    "asarUnpack": [
+      "node_modules/@lydell/node-pty*/**"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "resources/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "open-maestri",
+      "createDesktopShortcut": true,
+      "artifactName": "open-maestri-${version}-${arch}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "open-maestri-${version}-${arch}-portable.${ext}"
+    }
+  },
+  "bugs": {
+    "url": "https://github.com/awptrue/open-maestri-desktop/issues"
+  },
+  "homepage": "https://github.com/awptrue/open-maestri-desktop#readme"
+}
