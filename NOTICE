@@ -1,0 +1,39 @@
+open-maestri-desktop
+Open-source multi-agent orchestration canvas for Windows 10/11
+Copyright (C) 2026 open-maestri contributors
+
+Este programa e uma reescrita para Windows (Electron + TypeScript) do projeto
+open-maestri, originalmente escrito em Swift/AppKit para macOS:
+
+    open-maestri
+    Copyright (C) 2026 open-maestri contributors
+    https://github.com/pedrotecinf/open-maestri
+    https://github.com/zlh-428/open-maestri
+
+Base arquitetural Electron inicialmente derivada de:
+
+    IgorHeck/open-maestri
+    Copyright (C) 2026 Igor Heck
+    https://github.com/IgorHeck/open-maestri
+
+Partes deste repositorio sao trabalho derivado do codigo acima. O aviso de
+copyright e a ausencia de garantia dos autores originais sao preservados, e
+qualquer redistribuicao deve manter esta secao intacta (GPL-3.0 secao 5).
+
+Por ser trabalho derivado, e distribuido sob a mesma licenca do upstream:
+GPL v3 ou, a seu criterio, qualquer versao posterior (GPL-3.0-or-later). Sao
+preservados o formato de dados em disco (~/.open-maestri) e o protocolo do CLI
+`omaestri`, de modo que os dois programas leem os mesmos workspaces.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
