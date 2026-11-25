@@ -31,6 +31,20 @@ export interface RouterDeps {
   store: WorkspaceStore
   terminals: TerminalManager
   persistence: PersistenceManager
+  /**
+   * Injetado apenas em teste. Em producao fica indefinido e o roteador usa
+   * Electron; sem essa porta, `notify` so seria verificavel com app aberto.
+   */
+  notifier?: Notifier
+}
+
+/**
+ * Ponte minima para a notificacao do sistema. `show` devolve promessa porque o
+ * caminho real importa `electron` de forma dinamica.
+ */
+export interface Notifier {
+  isSupported(): boolean | Promise<boolean>
+  show(title: string, body: string): void | Promise<void>
 }
 
 export type Router = (args: string[], terminalId?: string) => Promise<string>
@@ -59,13 +73,13 @@ export function createRouter(deps: RouterDeps): Router {
         return runAsk(deps, args.slice(1), terminalId)
 
       case 'check':
-        return runCheck(deps, args.slice(1))
+        return runCheck(deps, args.slice(1), terminalId)
 
       case 'note':
         return runNote(deps, args.slice(1))
 
       case 'notify':
-        return runNotify(args.slice(1), terminalId)
+        return runNotify(deps, args.slice(1), terminalId)
 
       case 'portal':
         return 'error: portal ainda nao implementado nesta versao.'
@@ -205,12 +219,29 @@ async function runAsk(deps: RouterDeps, rest: string[], callerId: string | undef
 // check
 // ---------------------------------------------------------------------------
 
-function runCheck(deps: RouterDeps, rest: string[]): string {
+function runCheck(deps: RouterDeps, rest: string[], callerId: string | undefined): string {
   const name = rest[0]
   if (!name) return 'error: uso: omaestri check "Nome" [linhas]'
 
-  const target = deps.terminals.findByName(name)
-  if (!target) return `error: agente '${name}' nao encontrado. Rode 'omaestri list'.`
+  // Mesmo escopo de `ask`: o agente so le a saida de terminais conectados a ele.
+  // Sem isso `check` viraria um `tail -f` de qualquer no do canvas.
+  const payload = deps.store.getActivePayload()
+  const caller = callerId ? deps.terminals.get(callerId) : undefined
+  let restrictTo: Set<string> | undefined
+  if (caller) {
+    restrictTo = new Set<string>()
+    for (const c of payload?.connections ?? []) {
+      if (c.terminalIdA === caller.id) restrictTo.add(c.terminalIdB)
+      if (c.terminalIdB === caller.id) restrictTo.add(c.terminalIdA)
+    }
+  }
+
+  const target = deps.terminals.findByName(name, restrictTo)
+  if (!target) {
+    return restrictTo
+      ? `error: nenhum agente conectado chamado '${name}'. Rode 'omaestri list' para ver os conectados.`
+      : `error: agente '${name}' nao encontrado. Rode 'omaestri list'.`
+  }
 
   const requested = Number.parseInt(rest[1] ?? '', 10)
   const lines = Number.isFinite(requested) && requested > 0 ? requested : CHECK_DEFAULT_LINES
@@ -290,20 +321,42 @@ async function runNote(deps: RouterDeps, rest: string[]): Promise<string> {
  * `Notification` do Electron. Sem texto nao ha o que mostrar: erro explicito em
  * vez de notificacao vazia.
  */
-function runNotify(rest: string[], terminalId: string | undefined): Promise<string> {
+async function runNotify(
+  deps: RouterDeps,
+  rest: string[],
+  terminalId: string | undefined,
+): Promise<string> {
   const message = rest[0]
-  if (!message) return Promise.resolve('error: uso: omaestri notify "mensagem"')
+  if (!message) return 'error: uso: omaestri notify "mensagem"'
 
-  // Import dinamico: o roteador tambem roda em teste sem app do Electron pronto.
-  return import('electron').then(
-    ({ Notification }) => {
-      if (!Notification.isSupported()) return 'error: notificacoes nao suportadas neste sistema.'
-      const sender = terminalId ? ` (de ${terminalId})` : ''
-      new Notification({ title: 'open-maestri', body: `${message}${sender}` }).show()
-      return 'ok: notificacao enviada'
+  const notifier = deps.notifier ?? electronNotifier()
+  try {
+    if (!(await notifier.isSupported())) {
+      return 'error: notificacoes nao suportadas neste sistema.'
+    }
+    const sender = terminalId ? ` (de ${terminalId})` : ''
+    await notifier.show('open-maestri', `${message}${sender}`)
+    return 'ok: notificacao enviada'
+  } catch (e) {
+    return `error: notificacao indisponivel: ${describeError(e)}`
+  }
+}
+
+/**
+ * Caminho real. Import dinamico porque o roteador tambem roda em teste sem app
+ * do Electron pronto.
+ */
+function electronNotifier(): Notifier {
+  return {
+    async isSupported() {
+      const { Notification } = await import('electron')
+      return Notification.isSupported()
     },
-    (e: unknown) => `error: notificacao indisponivel: ${describeError(e)}`,
-  )
+    async show(title, body) {
+      const { Notification } = await import('electron')
+      new Notification({ title, body }).show()
+    },
+  }
 }
 
 // ---------------------------------------------------------------------------

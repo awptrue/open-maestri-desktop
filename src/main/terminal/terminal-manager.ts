@@ -18,7 +18,12 @@ function cliExecutable(cliDir: string): string {
   return join(cliDir, process.platform === 'win32' ? 'omaestri.cmd' : 'omaestri')
 }
 
-function createEnvironment(
+/**
+ * Monta o ambiente do PTY. Exportada para teste: o que importa aqui e o PATH
+ * com os shims e o `MAESTRI_CLI`, e provar isso sem abrir janela exige chamar
+ * esta funcao direto.
+ */
+export function createEnvironment(
   id: string,
   port?: number,
   overrides: NodeJS.ProcessEnv = {},
