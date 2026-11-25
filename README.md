@@ -1,76 +1,69 @@
 # open-maestri-desktop
 
-Canvas espacial de orquestracao de agentes de IA para **Windows 10/11 (x64)**.
-Reescrita em Electron + TypeScript do [open-maestri](https://github.com/pedrotecinf/open-maestri) (Swift/AppKit, macOS).
+[Português (Brasil)](README.pt-BR.md)
 
-Terminais reais de Claude Code, Codex, OpenCode, Gemini CLI e shell num canvas infinito,
-conectados entre si: um agente fala com outro pelo CLI `omaestri`, sem intermediario humano.
+A spatial canvas for orchestrating AI agents on **Windows 10/11 (x64)**.
+Built with Electron and TypeScript, it reimplements [open-maestri](https://github.com/pedrotecinf/open-maestri), originally built for macOS with Swift and AppKit.
 
-## Estado do projeto
+Run Claude Code, Codex, OpenCode, Gemini CLI, or a shell in real terminals on an infinite canvas.
+Connect terminals to let agents communicate directly through the `omaestri` CLI.
 
-| Etapa | Estado |
-|-------|--------|
-| Estrutura do workspace e convencoes | concluido |
-| Modelo de dados compativel com `workspace.json` (schemaVersion 2) | em andamento |
-| PTY (ConPTY via `@lydell/node-pty`) | validado no Windows 10 |
-| Canvas com pan/zoom | pendente |
-| Renderer (React + xterm) | pendente |
-| CLI `omaestri` | pendente |
+## Project Status
 
-## Requisitos
+Version 1 is in development. The canvas, PTY-backed terminals, Markdown notes, file tree,
+workspace persistence, and `omaestri` CLI are implemented. Running the installer and portable
+build on both Windows versions remains part of release validation.
 
-- Windows 10 build 1809+ ou Windows 11, x64
-- Node.js 22.12+
-- Nenhuma ferramenta de build C++ necessaria: o PTY usa prebuild ConPTY
+## Requirements
 
-## Desenvolvimento
+- Windows 10 or Windows 11, x64
+- Node.js 22.12 or later
+- No C++ build tools required: the PTY uses prebuilt ConPTY binaries.
+
+## Development
 
 ```powershell
 npm install
-npm run dev          # Electron com hot reload
-npm run typecheck    # tsc nos dois projetos (node + web)
-npm test             # vitest
-npm run build        # typecheck + bundle de producao
-npm run package      # instalador NSIS + portable em dist/
+npm run dev          # Electron with hot reload
+npm run typecheck    # Type-check the Node.js and renderer projects
+npm test             # Run Vitest
+npm run build        # Type-check and build for production
+npm run package      # Build the NSIS installer and portable executable in dist/
 ```
 
-## Compatibilidade com o macOS
+## macOS Compatibility
 
-O app le e grava exatamente o mesmo diretorio de dados:
+The Windows app uses the same workspace data layout as the macOS app:
 
 ```
 %USERPROFILE%\.open-maestri\
-├── manifest.json               # indice de workspaces (schemaVersion 1)
+├── manifest.json               # workspace index (schemaVersion 1)
 ├── preferences.json
 ├── app-state.json              # activeWorkspaceId + cleanShutdown
-├── run\
-│   └── agent.pipe              # named pipe global do CLI
 └── workspaces\{UUID}\
-    ├── workspace.json          # schemaVersion 2 — nos + conexoes
+    ├── workspace.json          # schemaVersion 2: nodes and connections
     ├── notes\{name}.md
     └── terminals\{UUID}.scrollback
 ```
 
-Um workspace criado no macOS abre no Windows e vice-versa.
-Detalhes do contrato em [docs/compatibility.md](docs/compatibility.md).
+See [the compatibility guide](docs/compatibility.md) for the file format and migration details.
 
-### Divergencias inevitaveis
+### Platform Differences
 
 | Item | macOS | Windows |
 |------|-------|---------|
-| Transporte do CLI | Unix socket + TCP | Named pipe `\\.\pipe\omaestri-agent` + TCP `127.0.0.1` |
-| Caminho no JSON | POSIX (`/Users/...`) | Normalizado para POSIX na escrita, convertido na leitura |
+| CLI transport | Unix socket + TCP | Named pipe `\\.\pipe\omaestri-agent` + loopback TCP |
+| Paths in JSON | POSIX (`/Users/...`) | Written in POSIX form and converted when read |
 | Shell | `zsh`/`bash` | PowerShell, `cmd`, Git Bash (`shell-resolver.ts`) |
-| Portal | WKWebView | `WebContentsView` do Electron |
-| Ombro | Apple Foundation Models | nao existe equivalente — fora de escopo |
+| Portal | WKWebView | Electron `WebContentsView` |
+| Ombro | Apple Foundation Models | No equivalent; out of scope |
 
-## Documentacao
+## Documentation
 
-- [AGENTS.md](AGENTS.md) — contrato de trabalho para agentes de codigo
-- [docs/architecture.md](docs/architecture.md) — arquitetura, fluxo de dados, modulos
-- [docs/compatibility.md](docs/compatibility.md) — contrato exato do formato em disco
-- [docs/cli-protocol.md](docs/cli-protocol.md) — protocolo do CLI `omaestri`
+- [Architecture](docs/architecture.md): system design, data flow, and modules
+- [Compatibility](docs/compatibility.md): on-disk format
+- [CLI protocol](docs/cli-protocol.md): `omaestri` command protocol
 
-## Licenca
+## License
 
-GPL-3.0-or-later. Ver [LICENSE](LICENSE) e [NOTICE](NOTICE).
+GPL-3.0-or-later. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
