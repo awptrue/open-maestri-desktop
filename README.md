@@ -15,9 +15,9 @@ Version 1 is in development. Release validation focuses on Windows 10 (x64).
 | Milestone | Status |
 | --- | --- |
 | Canvas, PTY terminals, Markdown notes, file tree, workspace persistence, and `omaestri` CLI | Implemented |
-| Portable build on Windows 10 | Smoke-tested on an earlier build; release candidate validation pending |
+| Portable build on Windows 10 | Build `7a93d44` passed smoke tests: CLI help, ConPTY, note access by full filename and short name, and clean workspace reopening |
 | NSIS installer on Windows 10 | Package built; installation and uninstallation tests pending |
-| Windows 10 display and notifications | Native 125% scaling, minimum and maximized window sizes, and system notifications pending validation |
+| Windows 10 display and notifications | Minimum window layout (900 x 600 DIP, 100% display scaling) passed; maximized layout, native 125% scaling, and system notifications remain untested |
 | Windows 11 | Deferred until after v1; not validated |
 
 ## Requirements
