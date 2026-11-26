@@ -16,7 +16,8 @@ Version 1 is in development. Release validation focuses on Windows 10 (x64).
 | --- | --- |
 | Canvas, PTY terminals, Markdown notes, file tree, workspace persistence, and `omaestri` CLI | Implemented |
 | Portable build on Windows 10 | Build `7a93d44` passed smoke tests: CLI help, ConPTY, note access by full filename and short name, and clean workspace reopening |
-| NSIS installer on Windows 10 | Build `7a93d44` passed silent per-user installation, a smoke test of the installed app, and uninstallation |
+| `omaestri ask` and `omaestri check` on Windows 10 | Portable build `7a93d44`: both commands passed end-to-end via the CLI shim between two connected PowerShell terminals running on ConPTY. Both rejected an unconnected terminal. No authenticated AI agent was tested because an authenticated QA profile was unavailable. |
+| NSIS installer on Windows 10 | Build `7a93d44` passed silent per-user installation, a smoke test of the installed app, and uninstallation. The graphical installer has not been tested under a standard user account. |
 | Windows 10 display and notifications | Minimum window layout (900 x 600 DIP at 100% scaling) passed. Maximized layout and native 125% scaling remain untested. The CLI accepted the notification request, but on-screen delivery has not been confirmed. |
 | Windows 11 | Deferred until after v1; not validated |
 
