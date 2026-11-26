@@ -16,8 +16,8 @@ A versão 1 está em desenvolvimento. A validação para lançamento tem foco no
 | --- | --- |
 | Canvas, terminais com PTY, notas em Markdown, árvore de arquivos, persistência do workspace e CLI `omaestri` | Implementados |
 | Versão portátil no Windows 10 | Build `7a93d44` passou nos testes básicos: ajuda da CLI, ConPTY, acesso a notas pelo nome completo do arquivo e pelo nome curto, e reabertura normal do workspace |
-| Instalador NSIS no Windows 10 | Pacote gerado; faltam testes de instalação e desinstalação |
-| Exibição e notificações no Windows 10 | Layout aprovado na janela mínima (900 x 600 DIP, escala de tela de 100%); faltam janela maximizada, escala nativa de 125% e notificações do sistema |
+| Instalador NSIS no Windows 10 | A build `7a93d44` passou na instalação silenciosa por usuário, no teste básico do app instalado e na desinstalação |
+| Exibição e notificações no Windows 10 | Layout aprovado na janela mínima (900 x 600 DIP, escala de tela de 100%). Faltam testar a janela maximizada e a escala nativa de 125%. A CLI aceitou o pedido de notificação, mas a exibição no Windows não foi confirmada. |
 | Windows 11 | Adiado para depois da v1; não validado |
 
 ## Requisitos
