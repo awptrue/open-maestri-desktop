@@ -260,6 +260,39 @@ function tailLines(target: { bufferLines(): string[] }, count: number): string {
 // note
 // ---------------------------------------------------------------------------
 
+type ActivePayload = NonNullable<ReturnType<WorkspaceStore['getActivePayload']>>
+
+/**
+ * Resolve o nome de uma nota para o `fileName` exato guardado no workspace.
+ *
+ * `omaestri list` imprime o `fileName` literal (por exemplo `Nota 1.md`), mas o
+ * agente pode chamar os comandos pelo nome curto (`Nota 1`). Os dois formatos
+ * sao aceitos, sempre sem diferenciar maiusculas. Ordem de prioridade:
+ *
+ * 1. `fileName` literal identico (diferencia maiusculas);
+ * 2. `fileName` literal sem diferenciar maiusculas;
+ * 3. nome curto, com o sufixo `.md` removido do arquivo.
+ *
+ * Em caso de colisao dentro do mesmo nivel vale a ordem dos nos no workspace,
+ * o que mantem a escolha deterministica. Arquivo literal sempre tem precedencia
+ * sobre o nome curto.
+ */
+function resolveNoteFileName(nodes: ActivePayload['nodes'], name: string): string | undefined {
+  const notes: string[] = []
+  for (const node of nodes) {
+    if (node.content.type !== 'stickyNote') continue
+    const fileName = node.content.value.fileName
+    if (fileName !== undefined && fileName !== '') notes.push(fileName)
+  }
+
+  const lower = name.toLowerCase()
+  const exact = notes.find((file) => file === name)
+  if (exact !== undefined) return exact
+  const literal = notes.find((file) => file.toLowerCase() === lower)
+  if (literal !== undefined) return literal
+  return notes.find((file) => file.replace(/\.md$/i, '').toLowerCase() === lower)
+}
+
 async function runNote(deps: RouterDeps, rest: string[]): Promise<string> {
   const action = rest[0]
   const name = rest[1]
@@ -268,17 +301,13 @@ async function runNote(deps: RouterDeps, rest: string[]): Promise<string> {
   const payload = deps.store.getActivePayload()
   if (!payload) return 'error: nenhum workspace aberto.'
 
-  // Resolver a nota pelo fileName ou pelo texto do cabecalho, como o original.
-  const note = payload.nodes.find((n) => {
-    if (n.content.type !== 'stickyNote') return false
-    const file = n.content.value.fileName ?? ''
-    return file.replace(/\.md$/i, '').toLowerCase() === (name ?? '').toLowerCase()
-  })
-  if (!name || !note || note.content.type !== 'stickyNote' || !note.content.value.fileName) {
+  // Nome vazio continua sendo erro (comportamento anterior). Nao confundir com
+  // o arquivo literal ".md": esse nome tem tamanho 3 e chega ao resolvedor.
+  const fileName = name === undefined || name === '' ? undefined : resolveNoteFileName(payload.nodes, name)
+  if (fileName === undefined) {
     return `error: nota '${name ?? ''}' nao encontrada. Rode 'omaestri list'.`
   }
 
-  const fileName = note.content.value.fileName
   const workspaceId = payload.id
 
   switch (action) {
