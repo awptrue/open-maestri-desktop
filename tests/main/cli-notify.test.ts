@@ -6,12 +6,18 @@
  * notificador e um duble que registra as chamadas; `store`, `terminals` e
  * `persistence` sao dublês vazios porque `notify` nao os consulta.
  */
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { PersistenceManager } from '../../src/main/persistence/persistence-manager'
 import type { TerminalManager } from '../../src/main/terminal/terminal-manager'
 import type { WorkspaceStore } from '../../src/main/workspace/workspace-store'
-import { createRouter, type Notifier } from '../../src/main/ipc-server/router'
+import {
+  createRouter,
+  electronNotifier,
+  NOTIFICATION_DIAGNOSTIC_WINDOW_MS,
+  type NativeNotificationClass,
+  type Notifier,
+} from '../../src/main/ipc-server/router'
 
 interface NotifierSpy {
   notifier: Notifier
@@ -108,5 +114,161 @@ describe('notify', () => {
 
     await router(['notify', 'oi'], undefined)
     expect(spy.shows[0]?.[1]).toBe('oi')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Caminho real (electronNotifier) com Electron dublado
+// ---------------------------------------------------------------------------
+
+/** Dublê minimo da Notification do Electron 45: `failed` (event, error). */
+class FakeNativeNotification {
+  static supported = true
+  static failureOnShow: string | undefined
+  static showError: string | undefined
+  static createError: string | undefined
+  static instances: FakeNativeNotification[] = []
+
+  readonly options: { title: string; body: string }
+  readonly listeners = new Map<string, Array<(...args: unknown[]) => void>>()
+  showCalls = 0
+
+  constructor(options: { title: string; body: string }) {
+    if (FakeNativeNotification.createError) {
+      throw new Error(FakeNativeNotification.createError)
+    }
+    this.options = options
+    FakeNativeNotification.instances.push(this)
+  }
+
+  static isSupported(): boolean {
+    return FakeNativeNotification.supported
+  }
+
+  static reset(): void {
+    FakeNativeNotification.supported = true
+    FakeNativeNotification.failureOnShow = undefined
+    FakeNativeNotification.showError = undefined
+    FakeNativeNotification.createError = undefined
+    FakeNativeNotification.instances = []
+  }
+
+  on(event: string, listener: (...args: unknown[]) => void): this {
+    const listeners = this.listeners.get(event) ?? []
+    listeners.push(listener)
+    this.listeners.set(event, listeners)
+    return this
+  }
+
+  show(): void {
+    this.showCalls++
+    if (FakeNativeNotification.showError) {
+      throw new Error(FakeNativeNotification.showError)
+    }
+    if (FakeNativeNotification.failureOnShow) {
+      this.emit('failed', {}, FakeNativeNotification.failureOnShow)
+    }
+  }
+
+  emit(event: string, ...args: unknown[]): void {
+    for (const listener of this.listeners.get(event) ?? []) listener(...args)
+  }
+}
+
+function makeElectronNotifier(warnings: string[]) {
+  return electronNotifier({
+    load: async () => FakeNativeNotification as unknown as NativeNotificationClass,
+    warn: (message) => warnings.push(message),
+  })
+}
+
+describe('electronNotifier', () => {
+  it('registra a falha nativa sem expor o corpo da mensagem', async () => {
+    FakeNativeNotification.reset()
+    const warnings: string[] = []
+    const notifier = makeElectronNotifier(warnings)
+
+    await notifier.show('open-maestri', 'corpo que nao pode ir para o log')
+    const native = FakeNativeNotification.instances[0]
+    expect(native?.showCalls).toBe(1)
+
+    native?.emit('failed', {}, 'elemento nao encontrado')
+    expect(warnings).toEqual(['notificacao nativa falhou: elemento nao encontrado'])
+    expect(warnings[0]).not.toContain('corpo que nao pode ir para o log')
+  })
+
+  it('mantem ok quando a falha nativa chega durante o show', async () => {
+    FakeNativeNotification.reset()
+    FakeNativeNotification.failureOnShow = 'acesso negado'
+    const warnings: string[] = []
+    const router = makeRouter(makeElectronNotifier(warnings))
+
+    expect(await router(['notify', 'oi'])).toBe('ok: notificacao enviada')
+    expect(warnings).toEqual(['notificacao nativa falhou: acesso negado'])
+  })
+})
+
+describe('retencao de diagnostico', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    FakeNativeNotification.reset()
+  })
+
+  it('solta a notificacao quando a janela de diagnostico expira', async () => {
+    vi.useFakeTimers()
+    FakeNativeNotification.reset()
+    const notifier = makeElectronNotifier([])
+
+    await notifier.show('open-maestri', 'oi')
+    expect(vi.getTimerCount()).toBe(1)
+
+    vi.advanceTimersByTime(NOTIFICATION_DIAGNOSTIC_WINDOW_MS)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('cancela o timer e solta a referencia no failed', async () => {
+    vi.useFakeTimers()
+    FakeNativeNotification.reset()
+    const warnings: string[] = []
+    const notifier = makeElectronNotifier(warnings)
+
+    await notifier.show('open-maestri', 'oi')
+    FakeNativeNotification.instances[0]?.emit('failed', {}, 'falha nativa')
+
+    expect(vi.getTimerCount()).toBe(0)
+    expect(warnings).toEqual(['notificacao nativa falhou: falha nativa'])
+  })
+
+  it('cancela o timer no close', async () => {
+    vi.useFakeTimers()
+    FakeNativeNotification.reset()
+    const notifier = makeElectronNotifier([])
+
+    await notifier.show('open-maestri', 'oi')
+    FakeNativeNotification.instances[0]?.emit('close')
+
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('nao retem referencia quando show lanca', async () => {
+    vi.useFakeTimers()
+    FakeNativeNotification.reset()
+    FakeNativeNotification.showError = 'show falhou'
+    const router = makeRouter(makeElectronNotifier([]))
+
+    const result = await router(['notify', 'oi'])
+    expect(result.startsWith('error: notificacao indisponivel: ')).toBe(true)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('nao retem referencia quando o construtor lanca', async () => {
+    vi.useFakeTimers()
+    FakeNativeNotification.reset()
+    FakeNativeNotification.createError = 'construtor falhou'
+    const router = makeRouter(makeElectronNotifier([]))
+
+    const result = await router(['notify', 'oi'])
+    expect(result.startsWith('error: notificacao indisponivel: ')).toBe(true)
+    expect(vi.getTimerCount()).toBe(0)
   })
 })

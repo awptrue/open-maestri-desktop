@@ -12,7 +12,7 @@
 
 import { app, dialog } from 'electron'
 
-import { AUTOSAVE_INTERVAL_SECONDS } from '@shared/constants'
+import { AUTOSAVE_INTERVAL_SECONDS, WINDOWS_APP_USER_MODEL_ID } from '@shared/constants'
 import { IPC } from '@shared/ipc-channels'
 import { registerIpcBridge } from './ipc-bridge'
 import { installSkills } from './connection/skill-injector'
@@ -29,6 +29,14 @@ import { WorkspaceStore } from './workspace/workspace-store'
 import { createMainWindow, getMainWindow } from './window'
 
 const log = createLogger('Main')
+
+// Windows: declara no processo o mesmo AUMID que o NSIS grava nos atalhos
+// (`build.appId`). E o pre-requisito documentado do Electron para associar o
+// toast ao app; a causa do banner nao observado no QA ainda nao foi provada.
+// Precisa acontecer antes de qualquer janela ou notificacao.
+if (process.platform === 'win32') {
+  app.setAppUserModelId(WINDOWS_APP_USER_MODEL_ID)
+}
 
 configureLogFile(resolveRoot())
 

@@ -14,7 +14,7 @@ import { CLI_PIPE_NAME } from '@shared/constants'
 import type { WorkspaceStore } from '../workspace/workspace-store'
 import type { TerminalManager } from '../terminal/terminal-manager'
 import type { PersistenceManager } from '../persistence/persistence-manager'
-import { describeError, recentLogs } from '../logger'
+import { createLogger, describeError, recentLogs } from '../logger'
 import { ConnectionRegistry, terminalNames } from '../connection/connection-registry'
 import { buildConnectionBanner, formatAskHint } from '../connection/role-injection'
 import { interAgentServer } from './server'
@@ -371,19 +371,95 @@ async function runNotify(
   }
 }
 
+const notificationLog = createLogger('Notification')
+
+/**
+ * Janela maxima em que a notificacao fica referenciada so para receber o
+ * evento nativo de diagnostico. O `close` do Electron nao e garantido em todos
+ * os casos; sem prazo, a referencia ficaria retida indefinidamente.
+ */
+export const NOTIFICATION_DIAGNOSTIC_WINDOW_MS = 30_000
+
+/**
+ * Forma minima de uma notificacao nativa. O Electron 45 dispara `failed`
+ * (event, error) quando a criacao/exibicao nativa falha; `close` apenas avisa
+ * que pode ser liberada antes do prazo.
+ */
+export interface NativeNotification {
+  on(event: 'failed', listener: (event: unknown, error: string) => void): unknown
+  on(event: 'close', listener: () => void): unknown
+  show(): void
+}
+
+export interface NativeNotificationClass {
+  isSupported(): boolean
+  new (options: { title: string; body: string }): NativeNotification
+}
+
+export interface ElectronNotifierOptions {
+  /** Injetado apenas em teste: o caminho real importa `electron`. */
+  load?: () => Promise<NativeNotificationClass>
+  /** Injetado apenas em teste; em producao grava no log do processo. */
+  warn?: (message: string) => void
+  /** Injetado apenas em teste; o valor de producao e `NOTIFICATION_DIAGNOSTIC_WINDOW_MS`. */
+  diagnosticWindowMs?: number
+}
+
+/** Referencias vivas apenas durante a janela de diagnostico. */
+const diagnosticRetention = new Map<NativeNotification, ReturnType<typeof setTimeout>>()
+
+/** Solta a referencia e cancela o timer associado. Idempotente. */
+function releaseNotification(notification: NativeNotification): void {
+  const timer = diagnosticRetention.get(notification)
+  if (timer === undefined) return
+  clearTimeout(timer)
+  diagnosticRetention.delete(notification)
+}
+
+/** Mantem a notificacao viva por no maximo `windowMs`, sem segurar o processo. */
+function retainForDiagnostics(notification: NativeNotification, windowMs: number): void {
+  const timer = setTimeout(() => {
+    // Nao chama close(): o toast do usuario termina pelo proprio Windows.
+    diagnosticRetention.delete(notification)
+  }, windowMs)
+  // Timers com unref nao impedem o processo de encerrar (fake timers em teste
+  // podem nao expor unref).
+  if (typeof timer.unref === 'function') timer.unref()
+  diagnosticRetention.set(notification, timer)
+}
+
 /**
  * Caminho real. Import dinamico porque o roteador tambem roda em teste sem app
  * do Electron pronto.
  */
-function electronNotifier(): Notifier {
+export function electronNotifier(options: ElectronNotifierOptions = {}): Notifier {
+  const load = options.load ?? (() => import('electron').then((m) => m.Notification))
+  const warn = options.warn ?? ((message: string) => notificationLog.warn(message))
+  const windowMs = options.diagnosticWindowMs ?? NOTIFICATION_DIAGNOSTIC_WINDOW_MS
   return {
     async isSupported() {
-      const { Notification } = await import('electron')
+      const Notification = await load()
       return Notification.isSupported()
     },
     async show(title, body) {
-      const { Notification } = await import('electron')
-      new Notification({ title, body }).show()
+      const Notification = await load()
+      let notification: NativeNotification | undefined
+      try {
+        notification = new Notification({ title, body })
+        const native = notification
+        native.on('failed', (_event, error) => {
+          // Somente o erro nativo vai para o log; o corpo da mensagem nunca.
+          warn(`notificacao nativa falhou: ${error}`)
+          releaseNotification(native)
+        })
+        native.on('close', () => releaseNotification(native))
+        retainForDiagnostics(native, windowMs)
+        native.show()
+      } catch (error) {
+        // Excecao no construtor ou no show: nada fica retido.
+        if (notification) releaseNotification(notification)
+        throw error
+      }
     },
   }
 }

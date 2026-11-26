@@ -51,5 +51,14 @@ export const CLI_PIPE_PATH = String.raw`\\.\pipe\omaestri-agent`
 /** Nome curto, usado no texto da documentacao e no debug. */
 export const CLI_PIPE_NAME = 'omaestri-agent'
 
+/**
+ * AUMID explicito do processo no Windows. Precisa ser identico ao `build.appId`
+ * do package.json, valor que o electron-builder grava como AUMID dos atalhos do
+ * NSIS (`SetLnkAUMI`). O Electron documenta que o processo declare o mesmo
+ * identificador para o toast ser associado ao atalho; a causa do banner nao
+ * observado no QA ainda nao foi comprovada.
+ */
+export const WINDOWS_APP_USER_MODEL_ID = 'dev.openmaestri.desktop'
+
 export const AGENT_IDLE_TIMEOUT_MS = 2000
 export const MAX_SCROLLBACK_LINES = 5000
