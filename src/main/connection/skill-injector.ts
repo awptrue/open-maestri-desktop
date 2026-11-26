@@ -31,7 +31,7 @@ export const SKILL_FILE_NAME = 'SKILL.md'
 /** Marcador de versao: so o que esta entre estes comentarios e gerenciado. */
 const VERSION_MARKER = 'omaestri-skill:'
 
-const SKILL_VERSION = '1'
+const SKILL_VERSION = '2'
 
 /**
  * Conteudo da skill. Descreve APENAS os comandos implementados nesta versao.
@@ -54,7 +54,7 @@ Connected notes can be read and written through the \`omaestri\` CLI.
 ## Commands
 
 - \`omaestri list\`
-  list connected agents, notes, and portals
+  list workspace terminals, their connections, and note filenames
 
 - \`omaestri context\`
   show which agents and notes YOUR terminal is connected to, plus the ask hint.
@@ -90,18 +90,13 @@ If a name is not found, run \`omaestri context\` to see who you can actually rea
 
 ## Timeouts
 
-The response from \`ask\` returns as soon as the other agent finishes. Scale the Bash tool timeout to the estimated completion time:
+The server waits up to 30 seconds for the target terminal to become idle, then returns up to 200 lines of current output. An idle terminal does not prove the agent finished.
 
-- **60000ms** (1 min) — quick questions, status checks, simple lookups
-- **300000ms** (5 min) — delegating a small, focused task (a single file change, a quick refactor)
-- **600000ms** (10 min) — code reviews, multi-step tasks, larger delegations
-- **1200000ms** (20 min) — debugging sessions, complex investigations, multi-file refactors
-
-If the timeout expires before the agent responds, do NOT re-send the prompt. Run \`omaestri check "Agent Name"\` to see their progress, then wait again with an appropriate timeout. Never interrupt an agent that is still working, and do not edit files that the other agent is actively modifying — wait for them to finish first.
+If the response is partial or the wait times out, do NOT re-send the prompt. Run \`omaestri check "Agent Name"\` to see their progress. Never interrupt an agent that is still working, and do not edit files that the other agent is actively modifying — wait for them to finish first.
 
 ## Connected Notes
 
-Notes support line-range reads: \`omaestri note read "Note Name" <offset> <limit>\`.
+Use the exact filename shown by \`omaestri list\` (including \`.md\`) or its short name without the extension. \`omaestri note read\` returns the full note without line numbers or pagination.
 Use \`omaestri note write\` to replace the entire note content, and \`omaestri note edit\` for surgical in-place replacements.
 
 ## Diagnostics

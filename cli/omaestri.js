@@ -4,10 +4,10 @@
 const USAGE = `omaestri - comunicacao entre agentes no open-maestri
 
   omaestri list
+  omaestri context
   omaestri ask "Nome" "prompt"
   omaestri check "Nome" [linhas]
-  omaestri note create ["conteudo"]
-  omaestri note read "Nome" [offset] [limit]
+  omaestri note read "Nome"
   omaestri note write "Nome" "conteudo"
   omaestri note edit "Nome" "antigo" "novo"
   omaestri notify "mensagem"

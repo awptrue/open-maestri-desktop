@@ -19,7 +19,7 @@ import { ConnectionRegistry, terminalNames } from '../connection/connection-regi
 import { buildConnectionBanner, formatAskHint } from '../connection/role-injection'
 import { interAgentServer } from './server'
 
-export const COMMANDS = 'list ask check note context notify portal debug'
+export const COMMANDS = 'list ask check note context notify debug'
 
 /** Tempo maximo que `ask` espera o agente ficar idle antes de desistir. */
 const ASK_IDLE_TIMEOUT_MS = 30_000
@@ -396,7 +396,7 @@ function buildHelp(): string {
   return [
     'Uso: omaestri <comando>',
     '',
-    '  list                          lista agentes, portais e notas conectados',
+    '  list                          lista terminais, conexoes e notas do workspace',
     '  ask "Nome" "prompt"           envia prompt a um agente conectado',
     '  check "Nome" [linhas]         le a saida atual do agente',
     '  context                       mostra conexoes e notas deste terminal',

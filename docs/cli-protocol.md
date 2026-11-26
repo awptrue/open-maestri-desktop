@@ -1,7 +1,7 @@
 # Protocolo do CLI `omaestri`
 
-Contrato verificado contra `_ref/pedro/Sources/` (Swift, fonte da verdade) e
-`_ref/igor/cli/omaestri.js` (port Windows).
+Este documento descreve o CLI da v1 para Windows. As diferenças em relação ao
+macOS são indicadas junto aos comandos.
 
 ## Transporte
 
@@ -48,6 +48,13 @@ enviar qualquer UUID — é um limite do modelo, herdado do macOS.
 
 ### `list`
 
+No Windows, lista as sessões de terminal do workspace, incluindo nome, tipo,
+estado, ID, diretório e conexões. A seção `Notas:` mostra os nomes literais dos
+arquivos, incluindo `.md`, e sinaliza notas sem conexão. Sem sessões, retorna
+`Nenhum terminal conectado neste workspace.`.
+
+No macOS, o formato é diferente (`ListHandler.swift:17-67`):
+
 ```
 You:
   - name: "<nome do chamador>"
@@ -67,45 +74,52 @@ Seções separadas por linha em branco. Sem conexões: `You:` + `\n\nNo connecti
 
 ### `ask "Agente" "prompt"` — síncrono
 
-Injeta o prompt no PTY do alvo (terminando em `\r`, nunca `\n`) e espera a resposta
-terminar. Timeout servidor de **30 s**. Retorna o snapshot do buffer inteiro, ANSI removido.
+No Windows, envia o prompt com `\r` ao PTY de um agente conectado ao terminal
+chamador. Aguarda o terminal ficar ocioso (2 s sem saída) por até 30 s e retorna
+até 200 linhas da saída atual. Em timeout, devolve a saída disponível com aviso.
+Ociosidade não garante que o agente terminou. Quando o alvo não está conectado,
+o roteador responde com `error:` e orienta a consultar `list`.
 
-Estratégia de término (`AskHandler.swift:116-183`):
-
-| Tipo de agente | Sinal de término |
-|----------------|------------------|
-| `generic_shell` | prompt retornou (regex de prompt Windows + POSIX) |
-| todos os outros | 2 s sem saída (`agentIdleTimeout`) |
-
-Em timeout: devolve o parcial. Alvo inexistente:
-`error: agent 'X' not found. Use 'omaestri list' to see connected agents.`
+No macOS, retorna o snapshot integral; a detecção de término depende do tipo de
+agente (`AskHandler.swift:116-183`).
 
 **Regra para o agente:** nunca reenviar o prompt após timeout. Usar `check`.
 
 ### `check "Agente" [linhas]`
 
-Últimas N linhas (default 20) do buffer do terminal alvo. Vazio: `(no recent output)`.
+No Windows, retorna as últimas N linhas do terminal conectado, com padrão de 60.
+Sem saída, retorna `(sem saida)`. No macOS, o padrão é 20 e o retorno vazio é
+`(no recent output)`.
 
-### `note read "Nome" [offset] [limit]`
+### `context`
 
-```
-[14 lines total]
-1       conteúdo
-```
+Mostra os terminais e as notas vinculados ao terminal chamador, mais a dica de
+uso de `ask`. Execute dentro de um terminal do canvas.
 
-Com offset: `[lines 10-14 of 14]` + linhas numeradas (`NoteFileManager.swift:29-50`).
+### `note read "Nome"`
+
+No Windows, lê o conteúdo integral, sem números de linha. Nota sem conteúdo
+retorna `(nota vazia)`. Nos comandos `read`, `write` e `edit`, use o nome literal
+do `list` (por exemplo, `Nota 1.md`) ou o nome curto (`Nota 1`). A busca ignora
+maiúsculas e minúsculas e prioriza o nome literal, primeiro com caixa idêntica.
+
+Somente no macOS: `note read "Nome" [offset] [limit]` para leitura paginada e
+numerada (`NoteFileManager.swift:29-50`).
 
 ### `note write "Nome" "conteúdo"`
 
-Substitui tudo. Resposta: `OK`. Escrita atômica no macOS.
+Substitui o conteúdo inteiro. A resposta de sucesso começa com `ok:` no Windows
+e é `OK` no macOS.
 
 ### `note edit "Nome" "antigo" "novo"`
 
-Substitui a primeira ocorrência. `OK` ou `error: Text 'antigo' not found in note`.
+Substitui a primeira ocorrência. A resposta no Windows começa com `ok:` se a
+alteração for gravada, ou `error:` se o trecho não existir.
 
-### `note create ["conteúdo"]`
+### `note create ["conteúdo"]` (somente macOS)
 
-Nome gerado `Note-<8 hex>`. Resposta: o nome atribuído.
+No macOS, devolve o nome atribuído (`Note-<8 hex>`). No Windows, crie a nota no
+canvas antes de usar os comandos de nota.
 
 ### `notify "mensagem"`
 
@@ -114,8 +128,9 @@ Notificação de sistema. Não aparece na lista de comandos do Swift original
 
 ### `role` / `preset` / `recruit` / `dismiss` / `connect`
 
-Maestro Mode. `recruit`/`dismiss` exigem que o chamador seja `isManager`
-(fail-closed). Fora do escopo da v1 — ver `AGENTS.md`.
+Esses comandos fazem parte do Maestro Mode no macOS e não estão implementados na
+v1 para Windows. No macOS, `recruit` e `dismiss` exigem que o chamador seja
+`isManager` (fail-closed).
 
 ### `debug`
 
@@ -124,9 +139,9 @@ O port Windows acrescenta estado do terminal, workspace e últimas linhas de log
 
 ## Entrega de resposta ao agente
 
-Não há marcador nem arquivo. O `ask` devolve o **snapshot integral** do buffer: o agente
-chamador lê o texto e interpreta. Isso significa que o chamador recebe também o eco do
-próprio prompt e o histórico visível.
+No Windows, o cabeçalho de `ask` identifica o alvo e nomeia o timeout quando
+ocorre. As últimas 200 linhas do buffer podem incluir o eco do prompt e saída
+anterior; não há arquivo separado nem recorte que isole só a resposta nova.
 
 Implicação de projeto: o buffer autoritativo vive no main (`@xterm/headless`), não no
 renderer. O CLI pode ser chamado com o nó fora do viewport.
@@ -143,6 +158,6 @@ O diretório é colocado no início do `PATH` de cada PTY (`cli-install.ts:24-98
 
 ## Skill injection
 
-O app escreve `SKILL.md` em cada raiz de skill ativa (default: `~/.claude/skills`).
-Idempotente: se o arquivo existe, **não sobrescreve** — edição do usuário é preservada
-(`SkillInjector.swift:19-51`).
+No Windows, o app instala `open-maestri/SKILL.md` em cada raiz de skills ativa.
+Não regrava um arquivo idêntico à versão distribuída, mas substitui o conteúdo
+quando ele difere da versão distribuída, inclusive edições locais nesse arquivo.
