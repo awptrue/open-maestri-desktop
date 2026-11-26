@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-Canvas espacial para orquestrar agentes de IA no **Windows 10/11 (x64)**.
+Canvas espacial para orquestrar agentes de IA. A versão 1 tem como alvo o **Windows 10 (x64)**.
 Feito com Electron e TypeScript, o projeto reimplementa o open-maestri, originalmente desenvolvido para macOS com Swift e AppKit.
 
 Use Claude Code, Codex, OpenCode, Gemini CLI ou um shell em terminais reais num canvas infinito.
@@ -10,13 +10,19 @@ Conecte os terminais para que os agentes conversem diretamente pela CLI `omaestr
 
 ## Estado do Projeto
 
-A versão 1 está em desenvolvimento. O canvas, os terminais com PTY, as notas em Markdown,
-a árvore de arquivos, a persistência do workspace e a CLI `omaestri` já foram implementados.
-Executar o instalador e a versão portátil nas duas versões do Windows ainda faz parte da validação de lançamento.
+A versão 1 está em desenvolvimento. A validação para lançamento tem foco no Windows 10 (x64).
+
+| Etapa | Estado |
+| --- | --- |
+| Canvas, terminais com PTY, notas em Markdown, árvore de arquivos, persistência do workspace e CLI `omaestri` | Implementados |
+| Versão portátil no Windows 10 | Teste básico passou em build anterior; falta validar a versão candidata |
+| Instalador NSIS no Windows 10 | Pacote gerado; faltam testes de instalação e desinstalação |
+| Exibição e notificações no Windows 10 | Falta validar escala nativa de 125%, janela mínima e maximizada e notificações do sistema |
+| Windows 11 | Adiado para depois da v1; não validado |
 
 ## Requisitos
 
-- Windows 10 ou Windows 11, x64
+- Windows 10 (x64)
 - Node.js 22.12 ou superior
 - Não precisa de ferramentas de compilação C++: o PTY usa binários ConPTY pré-compilados.
 

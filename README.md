@@ -2,7 +2,7 @@
 
 [Português (Brasil)](README.pt-BR.md)
 
-A spatial canvas for orchestrating AI agents on **Windows 10/11 (x64)**.
+A spatial canvas for orchestrating AI agents. Version 1 targets **Windows 10 (x64)**.
 Built with Electron and TypeScript, it reimplements [open-maestri](https://github.com/pedrotecinf/open-maestri), originally built for macOS with Swift and AppKit.
 
 Run Claude Code, Codex, OpenCode, Gemini CLI, or a shell in real terminals on an infinite canvas.
@@ -10,13 +10,19 @@ Connect terminals to let agents communicate directly through the `omaestri` CLI.
 
 ## Project Status
 
-Version 1 is in development. The canvas, PTY-backed terminals, Markdown notes, file tree,
-workspace persistence, and `omaestri` CLI are implemented. Running the installer and portable
-build on both Windows versions remains part of release validation.
+Version 1 is in development. Release validation focuses on Windows 10 (x64).
+
+| Milestone | Status |
+| --- | --- |
+| Canvas, PTY terminals, Markdown notes, file tree, workspace persistence, and `omaestri` CLI | Implemented |
+| Portable build on Windows 10 | Smoke-tested on an earlier build; release candidate validation pending |
+| NSIS installer on Windows 10 | Package built; installation and uninstallation tests pending |
+| Windows 10 display and notifications | Native 125% scaling, minimum and maximized window sizes, and system notifications pending validation |
+| Windows 11 | Deferred until after v1; not validated |
 
 ## Requirements
 
-- Windows 10 or Windows 11, x64
+- Windows 10 (x64)
 - Node.js 22.12 or later
 - No C++ build tools required: the PTY uses prebuilt ConPTY binaries.
 
